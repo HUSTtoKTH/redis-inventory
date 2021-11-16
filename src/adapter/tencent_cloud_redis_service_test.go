@@ -53,7 +53,7 @@ func TestTencentCloudRedisService_GetMemoryUsage(t *testing.T) {
 	assert.Error(t, e)
 }
 
-func TestTencentCloudRedisService_GetType(t *testing.T) {
+func TestTencentCloudRedisService_GetKeyType(t *testing.T) {
 	redisAddr := "11.168.176.16:6379"
 	c := redis.NewClient(&redis.Options{
 		Addr:     redisAddr,
@@ -61,6 +61,23 @@ func TestTencentCloudRedisService_GetType(t *testing.T) {
 	})
 	s := NewTencentCloudRedisService(c)
 	key := KeyInfo{Key: "test"}
-	s.GetType(context.Background(), &key)
+	s.GetKeyType(context.Background(), &key)
 	assert.Equal(t, "string", key.Type)
+}
+
+func TestTencentCloudRedisService_Batch(t *testing.T) {
+	redisAddr := "11.168.176.16:6379"
+	c := redis.NewClient(&redis.Options{
+		Addr:     redisAddr,
+		Password: "Tencent88", // no password set
+	})
+	s := NewTencentCloudRedisService(c)
+	key1 := KeyInfo{Key: "test", Node: "5225041744e3091d8499ffffbc44bf2a4afb898b"}
+	key2 := KeyInfo{Key: "test1", Node: "5225041744e3091d8499ffffbc44bf2a4afb898b"}
+	keys := []*KeyInfo{&key1, &key2}
+	s.GetTypeBatch(context.Background(), keys)
+	assert.Equal(t, "string", key1.Type)
+	s.GetMemoryUsageBatch(context.Background(), keys)
+	assert.True(t, key1.BytesSize > 0)
+	fmt.Printf("%+v\n%+v\n", key1, key2)
 }

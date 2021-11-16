@@ -43,8 +43,8 @@ type TencentCloudRedisService struct {
 }
 
 // ScanKeys scans keys asynchroniously and sends them to the returned channel
-func (s TencentCloudRedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan KeyInfo {
-	resultChan := make(chan KeyInfo, 10000)
+func (s TencentCloudRedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan *KeyInfo {
+	resultChan := make(chan *KeyInfo, 10000)
 	var count string
 	if options.ScanCount <= 0 {
 		count = "1000"
@@ -75,7 +75,7 @@ func (s TencentCloudRedisService) ScanKeys(ctx context.Context, options ScanOpti
 						panic(fmt.Sprintf("error %T %T", ansList[0], ansList[1]))
 					}
 					for _, key := range keys {
-						resultChan <- KeyInfo{
+						resultChan <- &KeyInfo{
 							Key:  fmt.Sprint(key),
 							Node: node,
 						}
@@ -83,9 +83,8 @@ func (s TencentCloudRedisService) ScanKeys(ctx context.Context, options ScanOpti
 							time.Sleep(time.Nanosecond * time.Duration(options.Throttle))
 						}
 					}
-					fmt.Println(iter)
 					i64, _ := strconv.ParseInt(iter, 10, 64)
-					if i64 > 30 {
+					if i64 == 0 {
 						break
 					}
 				}
@@ -132,11 +131,11 @@ func (s TencentCloudRedisService) GetMemoryUsage(ctx context.Context, key KeyInf
 	return res, nil
 }
 
-// GetType TODO
-func (s TencentCloudRedisService) GetType(ctx context.Context, key *KeyInfo) {
+// GetKeyType TODO
+func (s TencentCloudRedisService) GetKeyType(ctx context.Context, key *KeyInfo) {
 	var res string
 	result, err := s.client.Do(context.Background(), "TYPE", key.Key).Result()
-	fmt.Println(result, err)
+	// fmt.Println(result, err)
 	if err != nil {
 		return
 	}
@@ -146,6 +145,42 @@ func (s TencentCloudRedisService) GetType(ctx context.Context, key *KeyInfo) {
 	}
 	key.Type = res
 	return
+}
+
+// GetTypeBatch TODO
+func (s TencentCloudRedisService) GetTypeBatch(ctx context.Context, keys []*KeyInfo) {
+	m := []*redis.Cmd{}
+	pipe := s.client.Pipeline()
+	for _, key := range keys {
+		m = append(m, pipe.Do(context.Background(), "TYPE", key.Key))
+	}
+	_, err := pipe.Exec(context.Background())
+	if err != nil && err != redis.Nil {
+		panic(err)
+	}
+	for i, v := range m {
+		res, _ := v.Result()
+		result, _ := res.(string)
+		keys[i].Type = result
+	}
+}
+
+// GetMemoryUsageBatch TODO
+func (s TencentCloudRedisService) GetMemoryUsageBatch(ctx context.Context, keys []*KeyInfo) {
+	m := []*redis.Cmd{}
+	pipe := s.client.Pipeline()
+	for _, key := range keys {
+		m = append(m, pipe.Do(context.Background(), "MEMORY", "USAGE", key.Key, key.Node))
+	}
+	_, err := pipe.Exec(context.Background())
+	if err != nil && err != redis.Nil {
+		panic(err)
+	}
+	for i, v := range m {
+		res, _ := v.Result()
+		result, _ := res.(int64)
+		keys[i].BytesSize = result
+	}
 }
 
 // extractClusterNodes  获取集群的所有 master 节点

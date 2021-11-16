@@ -9,9 +9,10 @@ import (
 
 // KeyInfo TODO
 type KeyInfo struct {
-	Key  string
-	Node string
-	Type string
+	Key       string
+	Node      string
+	Type      string
+	BytesSize int64
 }
 
 // ScanOptions options for scanning keyspace
@@ -34,8 +35,8 @@ type RedisService struct {
 }
 
 // ScanKeys scans keys asynchroniously and sends them to the returned channel
-func (s RedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan KeyInfo {
-	resultChan := make(chan KeyInfo)
+func (s RedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan *KeyInfo {
+	resultChan := make(chan *KeyInfo)
 
 	scanOpts := radix.ScannerConfig{
 		Command: "SCAN",
@@ -51,7 +52,7 @@ func (s RedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan 
 		var key string
 		radixScanner := scanOpts.New(s.client)
 		for radixScanner.Next(ctx, &key) {
-			resultChan <- KeyInfo{
+			resultChan <- &KeyInfo{
 				Key: key,
 			}
 			if options.Throttle > 0 {
@@ -83,4 +84,15 @@ func (s RedisService) GetMemoryUsage(ctx context.Context, key KeyInfo) (int64, e
 	}
 
 	return res, nil
+}
+
+// GetKeyType TODO
+func (s RedisService) GetKeyType(ctx context.Context, key *KeyInfo) {
+	var res string
+	err := s.client.Do(context.Background(), radix.Cmd(&res, "TYPE", "USAGE", key.Key))
+	if err != nil {
+		return
+	}
+	key.Type = res
+	return
 }

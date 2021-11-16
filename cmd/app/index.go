@@ -1,17 +1,15 @@
 package app
 
 import (
-	"context"
 	"os"
 
 	"github.com/go-redis/redis/v8"
-	"github.com/mediocregopher/radix/v4"
 	"github.com/obukhov/redis-inventory/src/adapter"
 	"github.com/obukhov/redis-inventory/src/logger"
 	"github.com/obukhov/redis-inventory/src/renderer"
 	"github.com/obukhov/redis-inventory/src/scanner"
 	"github.com/obukhov/redis-inventory/src/splitter"
-	"github.com/obukhov/redis-inventory/src/trie"
+	"github.com/obukhov/redis-inventory/src/typetrie.go"
 	"github.com/spf13/cobra"
 )
 
@@ -38,11 +36,11 @@ var indexCmd = &cobra.Command{
 			// c = redis.NewClient(option)
 			redisService = adapter.NewTencentCloudRedisService(c)
 		} else {
-			clientSource, err := (radix.PoolConfig{}).New(context.Background(), "tcp", args[0])
-			if err != nil {
-				consoleLogger.Fatal().Err(err).Msg("Can't create redis client")
-			}
-			redisService = adapter.NewRedisService(clientSource)
+			// clientSource, err := (radix.PoolConfig{}).New(context.Background(), "tcp", args[0])
+			// if err != nil {
+			// 	consoleLogger.Fatal().Err(err).Msg("Can't create redis client")
+			// }
+			// redisService = adapter.NewRedisService(clientSource)
 		}
 
 		redisScanner := scanner.NewScanner(
@@ -51,7 +49,7 @@ var indexCmd = &cobra.Command{
 			consoleLogger,
 		)
 
-		resultTrie := trie.NewTrie(splitter.NewPunctuationSplitter([]rune(separators)...), maxChildren)
+		resultTrie := typetrie.NewTypeTrie(splitter.NewSimpleSplitter(separators))
 		redisScanner.Scan(
 			adapter.ScanOptions{
 				ScanCount: scanCount,

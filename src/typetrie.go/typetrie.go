@@ -9,64 +9,51 @@ import (
 
 // NewTypeTrie created Trie
 func NewTypeTrie(splitter splitter.Splitter) *TypeTrie {
+	node := trie.NewNode()
+	node.AddAggregator(trie.NewAggregator())
 	return &TypeTrie{
-		root:     make(map[string]KeyPatternMap),
+		root:     node,
 		splitter: splitter,
 	}
 }
 
-// TypeTrie TODO
-// Trie stores data about keys in a prefix tree
+// TypeTrie stores data about keys in a prefix tree
 type TypeTrie struct {
-	root     map[string]KeyPatternMap
+	root     *trie.Node
 	splitter splitter.Splitter
 }
 
-// KeyPatternMap TODO
-type KeyPatternMap struct {
-	lengthMap map[int]SameLengthKeysSet
-	Aggr      *trie.Aggregator
-}
-
-// SameLengthKeysSet TODO
-type SameLengthKeysSet map[string]*trie.Aggregator
-
-// // Value TODO
-// type Value struct {
-// 	// BytesSize size of the values in bytes
-// 	BytesSize int64
-// 	// KeysCount number of keys
-// 	KeysCount int64
-// }
-
 // Add adds information about another key with set of params
 func (t *TypeTrie) Add(key, keyType string, paramValues ...trie.ParamValue) {
+	curNode := t.root
+	var nextNode *trie.Node
+	if childNode := curNode.GetChild(keyType); childNode == nil {
+		nextNode = trie.NewNode()
+		nextNode.AddAggregator(trie.NewAggregator())
+		curNode.AddChild(keyType, nextNode)
+	} else {
+		nextNode = childNode
+	}
+
 	keyPieces := t.splitter.Split(key)
 	pattern := strings.Join(keyPieces, t.splitter.Divider())
-	length := len(keyPieces)
-	var keyPatternMap KeyPatternMap
-	var ok bool
-	if keyPatternMap, ok = t.root[keyType]; !ok {
-		t.root[keyType] = KeyPatternMap{
-			lengthMap: make(map[int]SameLengthKeysSet),
-			Aggr:      trie.NewAggregator(),
-		}
-		keyPatternMap = t.root[keyType]
+	var finalNode *trie.Node
+	if childNode := nextNode.GetChild(pattern); childNode == nil {
+		finalNode = trie.NewNode()
+		finalNode.AddAggregator(trie.NewAggregator())
+		nextNode.AddChild(pattern, finalNode)
+	} else {
+		finalNode = childNode
+	}
 
-	}
-	typeAggregator := keyPatternMap.Aggr
-	var sameLengthKeysSet SameLengthKeysSet
-	if sameLengthKeysSet, ok = keyPatternMap.lengthMap[length]; !ok {
-		keyPatternMap.lengthMap[length] = make(map[string]*trie.Aggregator)
-		sameLengthKeysSet = keyPatternMap.lengthMap[length]
-	}
-	var aggregator *trie.Aggregator
-	if aggregator, ok = sameLengthKeysSet[pattern]; !ok {
-		sameLengthKeysSet[pattern] = trie.NewAggregator()
-		aggregator = sameLengthKeysSet[pattern]
-	}
 	for _, p := range paramValues {
-		aggregator.Add(p.Param, p.Value)
-		typeAggregator.Add(p.Param, p.Value)
+		curNode.Aggregator().Add(p.Param, p.Value)
+		nextNode.Aggregator().Add(p.Param, p.Value)
+		finalNode.Aggregator().Add(p.Param, p.Value)
 	}
+}
+
+// Root returns root of the trie
+func (t *TypeTrie) Root() *trie.Node {
+	return t.root
 }

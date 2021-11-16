@@ -12,13 +12,13 @@ import (
 
 // RedisServiceInterface abstraction to access redis
 type RedisServiceInterface interface {
-	ScanKeys(ctx context.Context, options adapter.ScanOptions) <-chan adapter.KeyInfo
+	ScanKeys(ctx context.Context, options adapter.ScanOptions) <-chan *adapter.KeyInfo
 	GetKeysCount(ctx context.Context) (int64, error)
 	GetMemoryUsage(ctx context.Context, key adapter.KeyInfo) (int64, error)
 	GetKeyType(ctx context.Context, key *adapter.KeyInfo)
+	GetTypeBatch(ctx context.Context, keys []*adapter.KeyInfo)
+	GetMemoryUsageBatch(ctx context.Context, keys []*adapter.KeyInfo)
 }
-
-// KeyInfo TODO
 
 // RedisScanner scans redis keys and puts them in a trie
 type RedisScanner struct {
@@ -44,22 +44,33 @@ func (s *RedisScanner) Scan(options adapter.ScanOptions, result *typetrie.TypeTr
 	}
 
 	s.scanProgress.Start(totalCount)
+	keys := []*adapter.KeyInfo{}
 	for key := range s.redisService.ScanKeys(context.Background(), options) {
 		s.scanProgress.Increment()
-		res, err := s.redisService.GetMemoryUsage(context.Background(), key)
-		if err != nil {
-			s.logger.Error().Err(err).Msgf("Error dumping key %s", key)
-			continue
+		keys = append(keys, key)
+		if len(keys) == 1000 {
+			s.redisService.GetMemoryUsageBatch(context.Background(), keys)
+			s.redisService.GetTypeBatch(context.Background(), keys)
+			for _, key := range keys {
+				result.Add(
+					key.Key,
+					key.Type,
+					trie.ParamValue{Param: trie.BytesSize, Value: key.BytesSize},
+					trie.ParamValue{Param: trie.KeysCount, Value: 1},
+				)
+			}
+			keys = []*adapter.KeyInfo{}
 		}
-		s.redisService.GetKeyType(context.Background(), &key)
+	}
+	s.redisService.GetMemoryUsageBatch(context.Background(), keys)
+	s.redisService.GetTypeBatch(context.Background(), keys)
+	for _, key := range keys {
 		result.Add(
 			key.Key,
 			key.Type,
-			trie.ParamValue{Param: trie.BytesSize, Value: res},
+			trie.ParamValue{Param: trie.BytesSize, Value: key.BytesSize},
 			trie.ParamValue{Param: trie.KeysCount, Value: 1},
 		)
-
-		s.logger.Debug().Msgf("Dump %s value: %d", key, res)
 	}
 	s.scanProgress.Stop()
 }

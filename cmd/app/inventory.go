@@ -1,16 +1,12 @@
 package app
 
 import (
-	"context"
-	"os"
-
-	"github.com/mediocregopher/radix/v4"
 	"github.com/obukhov/redis-inventory/src/adapter"
 	"github.com/obukhov/redis-inventory/src/logger"
 	"github.com/obukhov/redis-inventory/src/renderer"
 	"github.com/obukhov/redis-inventory/src/scanner"
 	"github.com/obukhov/redis-inventory/src/splitter"
-	"github.com/obukhov/redis-inventory/src/trie"
+	"github.com/obukhov/redis-inventory/src/typetrie.go"
 	"github.com/spf13/cobra"
 )
 
@@ -23,18 +19,20 @@ var scanCmd = &cobra.Command{
 		consoleLogger := logger.NewConsoleLogger(logLevel)
 		consoleLogger.Info().Msg("Start scanning")
 
-		clientSource, err := (radix.PoolConfig{}).New(context.Background(), "tcp", args[0])
-		if err != nil {
-			consoleLogger.Fatal().Err(err).Msg("Can't create redis client")
-		}
+		// clientSource, err := (radix.PoolConfig{}).New(context.Background(), "tcp", args[0])
+		// if err != nil {
+		// 	consoleLogger.Fatal().Err(err).Msg("Can't create redis client")
+		// }
 
-		redisScanner := scanner.NewScanner(
-			adapter.NewRedisService(clientSource),
-			adapter.NewPrettyProgressWriter(os.Stdout),
-			consoleLogger,
-		)
+		redisScanner := &scanner.RedisScanner{}
+		// NewScanner(
+		// adapter.NewRedisService(clientSource),
+		// adapter.NewPrettyProgressWriter(os.Stdout),
+		// consoleLogger,
+		// )
 
-		resultTrie := trie.NewTrie(splitter.NewPunctuationSplitter([]rune(separators)...), maxChildren)
+		resultTrie := typetrie.NewTypeTrie(splitter.NewSimpleSplitter(separators))
+		// resultTrie := trie.NewTrie(splitter.NewPunctuationSplitter([]rune(separators)...), maxChildren)
 		redisScanner.Scan(
 			adapter.ScanOptions{
 				ScanCount: scanCount,
