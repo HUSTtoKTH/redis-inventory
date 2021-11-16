@@ -4,6 +4,7 @@ package splitter
 type Splitter interface {
 	// Split splits string key to fragments with given strategy
 	Split(in string) []string
+	Divider() string
 }
 
 // PunctuationSplitter splitting keys by a specific set of symbols (i.e. punctuation)
@@ -19,6 +20,11 @@ func NewPunctuationSplitter(punctuation ...rune) *PunctuationSplitter {
 	}
 
 	return &PunctuationSplitter{dividers: m}
+}
+
+// Divider TODO
+func (s *PunctuationSplitter) Divider() string {
+	return "s.dividers"
 }
 
 // Split splits string key to fragments with given strategy

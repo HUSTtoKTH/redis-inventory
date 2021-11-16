@@ -6,6 +6,7 @@ import (
 
 	"github.com/obukhov/redis-inventory/src/adapter"
 	"github.com/obukhov/redis-inventory/src/trie"
+	"github.com/obukhov/redis-inventory/src/typetrie.go"
 	"github.com/rs/zerolog"
 )
 
@@ -14,6 +15,7 @@ type RedisServiceInterface interface {
 	ScanKeys(ctx context.Context, options adapter.ScanOptions) <-chan adapter.KeyInfo
 	GetKeysCount(ctx context.Context) (int64, error)
 	GetMemoryUsage(ctx context.Context, key adapter.KeyInfo) (int64, error)
+	GetKeyType(ctx context.Context, key *adapter.KeyInfo)
 }
 
 // KeyInfo TODO
@@ -35,7 +37,7 @@ func NewScanner(redisService RedisServiceInterface, scanProgress adapter.Progres
 }
 
 // Scan initiates scanning process
-func (s *RedisScanner) Scan(options adapter.ScanOptions, result *trie.Trie) {
+func (s *RedisScanner) Scan(options adapter.ScanOptions, result *typetrie.TypeTrie) {
 	var totalCount int64
 	if options.Pattern == "*" || options.Pattern == "" {
 		totalCount = s.getKeysCount()
@@ -49,9 +51,10 @@ func (s *RedisScanner) Scan(options adapter.ScanOptions, result *trie.Trie) {
 			s.logger.Error().Err(err).Msgf("Error dumping key %s", key)
 			continue
 		}
-
+		s.redisService.GetKeyType(context.Background(), &key)
 		result.Add(
 			key.Key,
+			key.Type,
 			trie.ParamValue{Param: trie.BytesSize, Value: res},
 			trie.ParamValue{Param: trie.KeysCount, Value: 1},
 		)

@@ -52,3 +52,15 @@ func TestTencentCloudRedisService_GetMemoryUsage(t *testing.T) {
 	fmt.Println(r, e)
 	assert.Error(t, e)
 }
+
+func TestTencentCloudRedisService_GetType(t *testing.T) {
+	redisAddr := "11.168.176.16:6379"
+	c := redis.NewClient(&redis.Options{
+		Addr:     redisAddr,
+		Password: "Tencent88", // no password set
+	})
+	s := NewTencentCloudRedisService(c)
+	key := KeyInfo{Key: "test"}
+	s.GetType(context.Background(), &key)
+	assert.Equal(t, "string", key.Type)
+}

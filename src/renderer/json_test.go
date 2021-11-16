@@ -2,9 +2,11 @@ package renderer
 
 import (
 	"bytes"
+	"testing"
+
+	"github.com/obukhov/redis-inventory/src/splitter"
 	"github.com/obukhov/redis-inventory/src/trie"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type JSONRendererTestSuite struct {
@@ -88,7 +90,7 @@ func (suite *JSONRendererTestSuite) TestNewJSONRendererParams() {
 }
 
 func (suite *JSONRendererTestSuite) SetupTest() {
-	suite.trie = trie.NewTrie(trie.NewPunctuationSplitter(':'), 3)
+	suite.trie = trie.NewTrie(splitter.NewPunctuationSplitter(':'), 3)
 
 	suite.setupTrieKey("dev:article:1", 100)
 	suite.setupTrieKey("dev:article:2", 100)

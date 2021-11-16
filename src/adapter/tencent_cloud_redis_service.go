@@ -132,6 +132,22 @@ func (s TencentCloudRedisService) GetMemoryUsage(ctx context.Context, key KeyInf
 	return res, nil
 }
 
+// GetType TODO
+func (s TencentCloudRedisService) GetType(ctx context.Context, key *KeyInfo) {
+	var res string
+	result, err := s.client.Do(context.Background(), "TYPE", key.Key).Result()
+	fmt.Println(result, err)
+	if err != nil {
+		return
+	}
+	res, ok := result.(string)
+	if !ok {
+		return
+	}
+	key.Type = res
+	return
+}
+
 // extractClusterNodes  获取集群的所有 master 节点
 func extractClusterNodes(nodes string) (allNode []string) {
 	allNode = make([]string, 0)

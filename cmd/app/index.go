@@ -10,6 +10,7 @@ import (
 	"github.com/obukhov/redis-inventory/src/logger"
 	"github.com/obukhov/redis-inventory/src/renderer"
 	"github.com/obukhov/redis-inventory/src/scanner"
+	"github.com/obukhov/redis-inventory/src/splitter"
 	"github.com/obukhov/redis-inventory/src/trie"
 	"github.com/spf13/cobra"
 )
@@ -50,7 +51,7 @@ var indexCmd = &cobra.Command{
 			consoleLogger,
 		)
 
-		resultTrie := trie.NewTrie(trie.NewPunctuationSplitter([]rune(separators)...), maxChildren)
+		resultTrie := trie.NewTrie(splitter.NewPunctuationSplitter([]rune(separators)...), maxChildren)
 		redisScanner.Scan(
 			adapter.ScanOptions{
 				ScanCount: scanCount,

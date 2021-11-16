@@ -5,17 +5,17 @@ import "strings"
 // SimpleSplitter TODO
 // PunctuationSplitter splitting keys by a specific set of symbols (i.e. punctuation)
 type SimpleSplitter struct {
-	divider rune
+	divider string
 }
 
 // NewSimpleSplitter  creates PunctuationSplitter
-func NewSimpleSplitter(punctuation rune) *SimpleSplitter {
+func NewSimpleSplitter(punctuation string) *SimpleSplitter {
 	return &SimpleSplitter{divider: punctuation}
 }
 
 // Split splits string key to fragments with given strategy
 func (s *SimpleSplitter) Split(in string) []string {
-	result := strings.Split(in, string(s.divider))
+	result := strings.Split(in, s.divider)
 	for i, v := range result {
 		// 包含数字, 非 pattern 字段, 替换掉
 		if hasDigits(v) {
@@ -23,6 +23,11 @@ func (s *SimpleSplitter) Split(in string) []string {
 		}
 	}
 	return result
+}
+
+// Divider TODO
+func (s *SimpleSplitter) Divider() string {
+	return s.divider
 }
 
 func hasDigits(s string) bool {

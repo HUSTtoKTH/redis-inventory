@@ -11,6 +11,7 @@ import (
 type KeyInfo struct {
 	Key  string
 	Node string
+	Type string
 }
 
 // ScanOptions options for scanning keyspace
