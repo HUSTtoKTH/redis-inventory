@@ -7,6 +7,12 @@ import (
 	"github.com/mediocregopher/radix/v4"
 )
 
+// KeyInfo TODO
+type KeyInfo struct {
+	Key  string
+	Node string
+}
+
 // ScanOptions options for scanning keyspace
 type ScanOptions struct {
 	Pattern   string
@@ -27,8 +33,8 @@ type RedisService struct {
 }
 
 // ScanKeys scans keys asynchroniously and sends them to the returned channel
-func (s RedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan string {
-	resultChan := make(chan string)
+func (s RedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan KeyInfo {
+	resultChan := make(chan KeyInfo)
 
 	scanOpts := radix.ScannerConfig{
 		Command: "SCAN",
@@ -44,7 +50,9 @@ func (s RedisService) ScanKeys(ctx context.Context, options ScanOptions) <-chan 
 		var key string
 		radixScanner := scanOpts.New(s.client)
 		for radixScanner.Next(ctx, &key) {
-			resultChan <- key
+			resultChan <- KeyInfo{
+				Key: key,
+			}
 			if options.Throttle > 0 {
 				time.Sleep(time.Nanosecond * time.Duration(options.Throttle))
 			}
@@ -66,9 +74,9 @@ func (s RedisService) GetKeysCount(ctx context.Context) (int64, error) {
 }
 
 // GetMemoryUsage returns memory usage of given key
-func (s RedisService) GetMemoryUsage(ctx context.Context, key string) (int64, error) {
+func (s RedisService) GetMemoryUsage(ctx context.Context, key KeyInfo) (int64, error) {
 	var res int64
-	err := s.client.Do(context.Background(), radix.Cmd(&res, "MEMORY", "USAGE", key))
+	err := s.client.Do(context.Background(), radix.Cmd(&res, "MEMORY", "USAGE", key.Key))
 	if err != nil {
 		return 0, err
 	}

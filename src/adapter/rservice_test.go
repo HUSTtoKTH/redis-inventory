@@ -2,10 +2,11 @@ package adapter
 
 import (
 	"context"
+	"testing"
+
 	"github.com/alicebob/miniredis/v2"
 	"github.com/mediocregopher/radix/v4"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type RedisServiceTestSuite struct {
@@ -50,8 +51,8 @@ func (suite *RedisServiceTestSuite) TestScan() {
 	key1 := <-res
 	key2 := <-res
 
-	suite.Assert().Equal("dev:key1", key1)
-	suite.Assert().Equal("dev:key2", key2)
+	suite.Assert().Equal(KeyInfo{Key: "dev:key1"}, key1)
+	suite.Assert().Equal(KeyInfo{Key: "dev:key2"}, key2)
 
 	m.Close()
 }
@@ -62,7 +63,7 @@ func (suite *RedisServiceTestSuite) TestScanMatch() {
 	res := service.ScanKeys(context.Background(), ScanOptions{ScanCount: 1000, Pattern: "*:key1"})
 
 	key1 := <-res
-	suite.Assert().Equal("dev:key1", key1)
+	suite.Assert().Equal(KeyInfo{Key: "dev:key1"}, key1)
 
 	m.Close()
 

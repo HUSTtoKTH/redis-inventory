@@ -2,6 +2,9 @@ package app
 
 import (
 	"context"
+	"os"
+
+	"github.com/go-redis/redis/v8"
 	"github.com/mediocregopher/radix/v4"
 	"github.com/obukhov/redis-inventory/src/adapter"
 	"github.com/obukhov/redis-inventory/src/logger"
@@ -9,7 +12,6 @@ import (
 	"github.com/obukhov/redis-inventory/src/scanner"
 	"github.com/obukhov/redis-inventory/src/trie"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var indexCmd = &cobra.Command{
@@ -21,13 +23,29 @@ var indexCmd = &cobra.Command{
 		consoleLogger := logger.NewConsoleLogger(logLevel)
 		consoleLogger.Info().Msg("Start indexing")
 
-		clientSource, err := (radix.PoolConfig{}).New(context.Background(), "tcp", args[0])
-		if err != nil {
-			consoleLogger.Fatal().Err(err).Msg("Can't create redis client")
+		var redisService scanner.RedisServiceInterface
+		if redisVersion == 0 {
+			redisAddr := "11.168.176.16:6379"
+			c := redis.NewClient(&redis.Options{
+				Addr:     redisAddr,
+				Password: "Tencent88", // no password set
+			})
+			// option, err := redis.ParseURL(args[0])
+			// if err != nil {
+			// 	consoleLogger.Fatal().Err(err).Msg("Can't create redis client")
+			// }
+			// c = redis.NewClient(option)
+			redisService = adapter.NewTencentCloudRedisService(c)
+		} else {
+			clientSource, err := (radix.PoolConfig{}).New(context.Background(), "tcp", args[0])
+			if err != nil {
+				consoleLogger.Fatal().Err(err).Msg("Can't create redis client")
+			}
+			redisService = adapter.NewRedisService(clientSource)
 		}
 
 		redisScanner := scanner.NewScanner(
-			adapter.NewRedisService(clientSource),
+			redisService,
 			adapter.NewPrettyProgressWriter(os.Stdout),
 			consoleLogger,
 		)
@@ -62,9 +80,12 @@ var indexCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(indexCmd)
 	indexCmd.Flags().StringVarP(&logLevel, "logLevel", "l", "info", "Level of logs to be displayed")
-	indexCmd.Flags().StringVarP(&separators, "separators", "s", ":", "Symbols that logically separate levels of the key")
-	indexCmd.Flags().IntVarP(&maxChildren, "maxChildren", "m", 10, "Maximum children node can have before start aggregating")
+	indexCmd.Flags().StringVarP(&separators, "separators", "s", "_", "Symbols that logically separate levels of the key")
+	indexCmd.Flags().IntVarP(&maxChildren, "maxChildren", "m", 10,
+		"Maximum children node can have before start aggregating")
 	indexCmd.Flags().StringVarP(&pattern, "pattern", "k", "*", "Glob pattern limiting the keys to be aggregated")
-	indexCmd.Flags().IntVarP(&scanCount, "scanCount", "c", 1000, "Number of keys to be scanned in one iteration (argument of scan command)")
+	indexCmd.Flags().IntVarP(&scanCount, "scanCount", "c", 1000,
+		"Number of keys to be scanned in one iteration (argument of scan command)")
 	indexCmd.Flags().IntVarP(&throttleNs, "throttle", "t", 0, "Throttle: number of nanoseconds to sleep between keys")
+	indexCmd.Flags().IntVarP(&redisVersion, "redisVersion", "v", 0, "Version: 0 tencentcloud redis, 1 normal redis")
 }

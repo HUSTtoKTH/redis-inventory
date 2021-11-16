@@ -1,19 +1,20 @@
 package renderer
 
 import (
-	"code.cloudfoundry.org/bytefmt"
 	"encoding/json"
 	"errors"
+	"sort"
+	"strings"
+
+	"code.cloudfoundry.org/bytefmt"
 	"github.com/hetiansu5/urlquery"
 	"github.com/obukhov/redis-inventory/src/server"
 	"github.com/obukhov/redis-inventory/src/trie"
-	"sort"
-	"strings"
 )
 
 // NewChartRendererParams creates ChartRendererParams
 func NewChartRendererParams(paramsSerialized string) (ChartRendererParams, error) {
-	params := ChartRendererParams{Depth: 10, Port: 8888}
+	params := ChartRendererParams{Depth: 10, Port: 8080}
 
 	err := urlquery.Unmarshal([]byte(paramsSerialized), &params)
 	if err != nil {

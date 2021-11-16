@@ -1,7 +1,10 @@
+// Package trie TODO
 package trie
 
+import "github.com/obukhov/redis-inventory/src/splitter"
+
 // NewTrie created Trie
-func NewTrie(splitter Splitter, maxChildren int) *Trie {
+func NewTrie(splitter splitter.Splitter, maxChildren int) *Trie {
 	node := NewNode()
 	node.AddAggregator(NewAggregator())
 
@@ -15,7 +18,7 @@ func NewTrie(splitter Splitter, maxChildren int) *Trie {
 // Trie stores data about keys in a prefix tree
 type Trie struct {
 	root        *Node
-	splitter    Splitter
+	splitter    splitter.Splitter
 	maxChildren int
 }
 

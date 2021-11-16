@@ -1,18 +1,20 @@
 package trie
 
 import (
+	"testing"
+
+	"github.com/obukhov/redis-inventory/src/splitter"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"testing"
 )
 
 type TrieTestSuite struct {
 	suite.Suite
-	splitter Splitter
+	splitter splitter.Splitter
 }
 
 func (suite *TrieTestSuite) TestAdd() {
-	trie := NewTrie(NewPunctuationSplitter(':'), 100)
+	trie := NewTrie(splitter.NewPunctuationSplitter(':'), 100)
 
 	trie.Add("foo:bar:lorem", ParamValue{BytesSize, 10})
 	trie.Add("foo:bar:ipsum", ParamValue{BytesSize, 20})
@@ -26,7 +28,7 @@ func (suite *TrieTestSuite) TestAdd() {
 }
 
 func (suite *TrieTestSuite) TestKeyEndingInFork() {
-	trie := NewTrie(NewPunctuationSplitter(':'), 100)
+	trie := NewTrie(splitter.NewPunctuationSplitter(':'), 100)
 
 	trie.Add("foo:bar:lorem", ParamValue{BytesSize, 10})
 	trie.Add("foo:bar:ipsum", ParamValue{BytesSize, 20})
@@ -41,7 +43,7 @@ func (suite *TrieTestSuite) TestKeyEndingInFork() {
 }
 
 func (suite *TrieTestSuite) TestKeyEndingInIntermediateNode() {
-	trie := NewTrie(NewPunctuationSplitter(':'), 100)
+	trie := NewTrie(splitter.NewPunctuationSplitter(':'), 100)
 
 	trie.Add("foo:bar:lorem", ParamValue{BytesSize, 10})
 	trie.Add("foo:bar:ipsum", ParamValue{BytesSize, 20})
@@ -59,7 +61,7 @@ func (suite *TrieTestSuite) TestKeyEndingInIntermediateNode() {
 func (suite *TrieTestSuite) TestAddWithMaxChildrenLimit() {
 	maxChildrenSavedLimit := 3
 
-	trie := NewTrie(NewPunctuationSplitter(':'), maxChildrenSavedLimit)
+	trie := NewTrie(splitter.NewPunctuationSplitter(':'), maxChildrenSavedLimit)
 
 	trie.Add("foo:bar:lorem", ParamValue{BytesSize, 10})
 	trie.Add("foo:bar:ipsum", ParamValue{BytesSize, 20})

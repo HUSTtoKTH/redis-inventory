@@ -1,3 +1,4 @@
+// Package scanner TODO
 package scanner
 
 import (
@@ -10,10 +11,12 @@ import (
 
 // RedisServiceInterface abstraction to access redis
 type RedisServiceInterface interface {
-	ScanKeys(ctx context.Context, options adapter.ScanOptions) <-chan string
+	ScanKeys(ctx context.Context, options adapter.ScanOptions) <-chan adapter.KeyInfo
 	GetKeysCount(ctx context.Context) (int64, error)
-	GetMemoryUsage(ctx context.Context, key string) (int64, error)
+	GetMemoryUsage(ctx context.Context, key adapter.KeyInfo) (int64, error)
 }
+
+// KeyInfo TODO
 
 // RedisScanner scans redis keys and puts them in a trie
 type RedisScanner struct {
@@ -48,7 +51,7 @@ func (s *RedisScanner) Scan(options adapter.ScanOptions, result *trie.Trie) {
 		}
 
 		result.Add(
-			key,
+			key.Key,
 			trie.ParamValue{Param: trie.BytesSize, Value: res},
 			trie.ParamValue{Param: trie.KeysCount, Value: 1},
 		)
@@ -64,6 +67,6 @@ func (s *RedisScanner) getKeysCount() int64 {
 		s.logger.Error().Err(err).Msgf("Error getting number of keys")
 		return 0
 	}
-
+	s.logger.Info().Msgf("key number: %d", res)
 	return res
 }
