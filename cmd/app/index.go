@@ -1,6 +1,8 @@
 package app
 
 import (
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 
 	"github.com/go-redis/redis/v8"
@@ -19,6 +21,10 @@ var indexCmd = &cobra.Command{
 	Long:  "Keep in mind that some options are scanning (index) options that cannot be redefined later. For example, `maxChildren` changes the way index data is built, unlike `depth` parameter only influencing rendering",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		go func() {
+			http.ListenAndServe("0.0.0.0:8080", nil)
+		}()
+
 		consoleLogger := logger.NewConsoleLogger(logLevel)
 		consoleLogger.Info().Msg("Start indexing")
 
@@ -58,6 +64,7 @@ var indexCmd = &cobra.Command{
 			},
 			resultTrie,
 		)
+		resultTrie.Clean()
 
 		indexFileName := os.TempDir() + "/redis-inventory.json"
 		f, err := os.Create(indexFileName)

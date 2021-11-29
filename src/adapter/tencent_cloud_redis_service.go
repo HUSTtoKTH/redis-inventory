@@ -69,9 +69,9 @@ func (s TencentCloudRedisService) ScanKeys(ctx context.Context, options ScanOpti
 					if !ok {
 						panic(fmt.Sprintf("error %v", err))
 					}
-					iter, ok1 := ansList[0].(string)
+					iter, ok = ansList[0].(string)
 					keys, ok2 := ansList[1].([]interface{})
-					if !ok1 || !ok2 {
+					if !ok || !ok2 {
 						panic(fmt.Sprintf("error %T %T", ansList[0], ansList[1]))
 					}
 					for _, key := range keys {

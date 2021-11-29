@@ -57,3 +57,21 @@ func (t *TypeTrie) Add(key, keyType string, paramValues ...trie.ParamValue) {
 func (t *TypeTrie) Root() *trie.Node {
 	return t.root
 }
+
+// Clean TODO 清除 count ==1 的 pattern
+func (t *TypeTrie) Clean() {
+	for _, childNode := range t.root.Children {
+		otherNode := trie.NewNode()
+		otherNode.AddAggregator(trie.NewAggregator())
+		childNode.AddChild("other", otherNode)
+		for key, child := range childNode.Children {
+			paramMap := child.Aggregator().Params
+			if paramMap[trie.KeysCount] <= 1 {
+				for k, v := range paramMap {
+					otherNode.Aggregator().Add(k, v)
+				}
+				delete(childNode.Children, key)
+			}
+		}
+	}
+}
